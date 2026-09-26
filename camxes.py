@@ -10,7 +10,7 @@ from optparse import OptionParser
 
 import camxes_py.parsimonious_ext # expression_nodes
 
-__version__ = "v0.10.0"
+__version__ = "v0.11.0"
 
 PARSERS      = [ 'camxes-ilmen' ]
 TRANSFORMERS = [ 'camxes-json', 'camxes-morphology', 'minimal', 'vlatai', 'node-coverage', 'debug', 'raw' ]

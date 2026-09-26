@@ -11,7 +11,7 @@ from parsimonious.exceptions import ParseError
 
 from camxes import __version__, configure_platform
 from camxes_py.parsers import camxes_ilmen
-from camxes_py.transformers import camxes_json, camxes_morphology
+from camxes_py.transformers import camxes_json
 
 ENV = OrderedDict([
     ("engine", "camxes-py"),
@@ -42,32 +42,26 @@ def process_input(input_json):
     input_specs = input_json["specs"]
     parser = camxes_ilmen.Parser()
     json_transformer = camxes_json.Transformer()
-    morph_transformer = camxes_morphology.Transformer()
     return [
-        process_spec(spec, parser, json_transformer, morph_transformer) \
+        process_spec(spec, parser, json_transformer) \
             for spec in input_specs
     ]
 
-def process_spec(input_spec, parser, json_transformer, morph_transformer):
+def process_spec(input_spec, parser, json_transformer):
     output_spec = OrderedDict()
     output_spec["md5"] = input_spec["md5"]
     text = output_spec["txt"] = input_spec["txt"]
 
-    out = morph = None
+    out = None
     try:
         print("text: " + text)
         parsed = parser.parse(text)
         out = transform_to_serial(parsed, json_transformer)
-        morph = transform_to_serial(parsed, morph_transformer)
     except ParseError:
         out = "ERROR"
-        morph = None
     if out != input_spec["out"]:
         print_error(text, input_spec["out"], out)
-
     output_spec["out"] = out
-    if morph:
-        output_spec["morph"] = morph
 
     return output_spec
 

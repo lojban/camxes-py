@@ -1,2 +1,3 @@
-parsimonious==0.8.1
-twisted==18.9.0
+parsimonious==0.9.0
+twisted==21.7.0
+six==1.17.0

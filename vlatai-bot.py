@@ -12,7 +12,7 @@ from twisted.python import log
 from camxes import __version__
 from irc.protocol_factory import IrcClientFactory
 
-DEFAULT_HOST     = "irc.freenode.net"
+DEFAULT_HOST     = "irc.libera.net"
 DEFAULT_PORT     = 6667
 DEFAULT_CHANNELS = [ "#lojban" ]
 DEFAULT_NICKNAME = "vlatai"

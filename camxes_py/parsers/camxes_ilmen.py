@@ -5,13 +5,13 @@ import os
 
 from parsimonious.grammar import Grammar
 
-from ..parsimonious_ext.expressions import Predicate, LookaheadPredicate
+from ..parsimonious_ext.expressions import LookaheadPredicate
 
 GRAMMAR_FILENAME = "camxes_ilmen.peg"
 
 ZOI_DELIMITER_KEY = "zoi_delimiter"
 
-def build_grammar(path, default_rule):
+def build_grammar(path):
     with open(path) as handle:
         grammar = Grammar(handle.read())
     return grammar
@@ -28,20 +28,17 @@ class ZoiCaptureDelimiterPredicate(LookaheadPredicate):
         self.quotation_state = quotation_state
 
     def evaluate(self, node):
-        words = node.text.split(",")
-        self.quotation_state[ZOI_DELIMITER_KEY] = words[-1]
+        self.quotation_state[ZOI_DELIMITER_KEY] = node.text
         return True
 
-# Is this non-space word within the quotation? (i.e. not the delimiter)
-class ZoiQuotedWordPredicate(Predicate):
+class ZoiQuotedWordPredicate(LookaheadPredicate):
 
     def __init__(self, member, quotation_state):
         super(ZoiQuotedWordPredicate, self).__init__(member)
         self.quotation_state = quotation_state
 
     def evaluate(self, node):
-        word = node.text.replace(",", "")
-        return word != self.quotation_state[ZOI_DELIMITER_KEY]
+        return node.text != self.quotation_state[ZOI_DELIMITER_KEY]
 
 # Is this lojban word the zoi quotation delimiter?
 class ZoiDelimiterPredicate(LookaheadPredicate):
@@ -51,15 +48,14 @@ class ZoiDelimiterPredicate(LookaheadPredicate):
         self.quotation_state = quotation_state
 
     def evaluate(self, node):
-        words = node.text.split(",")
-        return words[-1] == self.quotation_state[ZOI_DELIMITER_KEY]
+        return node.text == self.quotation_state[ZOI_DELIMITER_KEY]
 
 class Parser(object):
 
     def __init__(self, default_rule=None, path=None):
         if not path:
             path = _default_grammar_path()
-        self.grammar = build_grammar(path, default_rule)
+        self.grammar = build_grammar(path)
         self._enhance_grammar(default_rule)
 
     def _enhance_grammar(self, default_rule):
@@ -84,30 +80,34 @@ class Parser(object):
     def _rewrite_tuple(vals, i, new):
         return tuple((new if i == j else val) for j, val in enumerate(vals))
 
+    # zoi_open = ( &lojban_word lojban_word )
     def _enhance_zoi_open(self, quotation_state):
-        # replace zoi_open lookahead with delimiter capturing predicate
         zoi_open = self.grammar['zoi_open']
-        zoi_open_lookahead = zoi_open.members[0]
-        zoi_open_word = zoi_open_lookahead.members[0]
-        zoi_open_predicate = ZoiCaptureDelimiterPredicate(zoi_open_word,
-                                                          quotation_state)
+        # zoi_open.members: (<Lookahead &lojban_word>, <OneOf lojban_word = CMEVLA / CMAVO / BRIVLA>)
+        lojban_word_lookahead = zoi_open.members[0]
+        lojban_word = lojban_word_lookahead.members[0]
+        zoi_open_predicate = ZoiCaptureDelimiterPredicate(lojban_word, quotation_state)
+        # replace &lojban_word in zoi_open Sequence with ZoiCaptureDelimiterPredicate(lojban_word)
         zoi_open.members = self._rewrite_tuple(zoi_open.members, 0, zoi_open_predicate)
 
     def _enhance_zoi_word(self, quotation_state):
-        # wrap zoi_word non_space_plus with quoted word predicate
         zoi_word = self.grammar['zoi_word']
-        zoi_word_non_space_plus = zoi_word.members[0]
-        zoi_word_predicate = ZoiQuotedWordPredicate(zoi_word_non_space_plus,
-                                                    quotation_state)
+        # zoi_word.members: (<Lookahead &zoi_word_2>, <OneOrMore zoi_word_2 = non_space+>)
+        zoi_word_2_lookahead = zoi_word.members[0]
+        zoi_word_2 = zoi_word_2_lookahead.members[0]
+        zoi_word_predicate = ZoiQuotedWordPredicate(zoi_word_2, quotation_state)
+        # replace &zoi_word_2 node in zoi_word Sequence with ZoiQuotedWordPredicate(&zoi_word_2)
         zoi_word.members = self._rewrite_tuple(zoi_word.members, 0, zoi_word_predicate)
 
     def _enhance_zoi_close(self, quotation_state):
-        # replace zoi_close lookahead with delimiter predicate
         zoi_close = self.grammar['zoi_close']
-        zoi_close_lookahead = zoi_close.members[0]
-        zoi_close_word = zoi_close_lookahead.members[0]
-        zoi_close_predicate = ZoiDelimiterPredicate(zoi_close_word,
-                                                    quotation_state)
+        # zoi_close.members: (<Lookahead &any_word>, <Sequence any_word = lojban_word spaces?>)
+        any_word_lookahead = zoi_close.members[0]
+        any_word = any_word_lookahead.members[0]
+        lojban_word = any_word.members[0]
+        zoi_close_predicate = ZoiDelimiterPredicate(lojban_word, quotation_state)
+        # replace &any_word in zoi_close_sequence with ZoiDelimiterPredicate(lojban_word)
+        # (trailing spaces? of any_word will still be consumed by zoi_close.members[1])
         zoi_close.members = self._rewrite_tuple(zoi_close.members, 0, zoi_close_predicate)
 
     def parse(self, text):

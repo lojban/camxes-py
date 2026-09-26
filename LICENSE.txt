@@ -1,5 +1,5 @@
 
-Copyright (c) 2014 Riley Martinez-Lynch, except where otherwise noted.
+Copyright (c) 2014-2026 Riley Lynch, except where otherwise noted.
 
 The "camxes" PEG grammar was written by Robin Lee Powell and
 Jorge Llambías, and implemented in JavaScript by Masato Hagiwara,
