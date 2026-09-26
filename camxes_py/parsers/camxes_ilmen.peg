@@ -29,33 +29,39 @@
 
 # ___ GRAMMAR ___
 
+# (ntsekees/0030386): 20151116
+# "ro lo re gerna zo'u cikre zo zoi lo ka na se citka lo drata mafyvla"
+# ".i je di'a zanru zoi mo. yyyyy .mo .i lo catni gerna zo'u di'a zanru lu je li'u"
 text = (
   intro_null
   NAI_clause*
   text_part_2
-  ( !text_1 joik_jek )?
+  ( !gek joik_jek )?
   text_1?
   faho_clause
   EOF?
 )
 
-intro_null = ( spaces? su_clause* intro_si_clause )
+# (ntsekees/74f387d): 20151120 y as the sole input
+intro_null = ( initial_spaces? su_clause* intro_si_clause )
 
 text_part_2 = ( ( CMEVLA_clause+ / indicators? ) free* )
 
 intro_si_clause = ( si_clause? SI_clause* )
 
-faho_clause = ( ( FAhO_clause dot_star )? )
+faho_clause = ( FAhO_clause dot_star )?
 
 # Please note that the "text_1" item in the text_1 production does
 # *not* match the BNF. This is due to a bug in the BNF.
+# (ntsekees/2036eda): 20151113 "gau ku lo kunti uenzi zo'u na cupra lo tcana pe la'oi"
 text_1 = (
   ( I_clause ( jek / joik )? ( stag? BO_clause )? free* text_1? )
   / ( NIhO_clause+ free* su_clause* paragraphs? )
   / paragraphs
 )
 
-paragraphs = ( paragraph ( NIhO_clause+ free* su_clause* paragraphs )? )
+# (ntsekees/aaa108f): fixes, "gimyinda" and "ni'o ni'o pa mo'o ni'o"
+paragraphs = ( paragraph? ( NIhO_clause+ free* su_clause* paragraphs )? )
 
 paragraph = (
   ( statement / fragment )
@@ -123,7 +129,13 @@ bridi_tail_sa = (
   bridi_tail_start
   (
     term
-    / ( !bridi_tail_start (sa_word / ( SA_clause !bridi_tail_start ) ) )
+    / (
+      !bridi_tail_start
+      (
+        sa_word
+        / ( SA_clause !bridi_tail_start )
+      )
+    )
   )*
   SA_clause
   &bridi_tail
@@ -167,25 +179,16 @@ gek_sentence = (
   / ( NA_clause free* gek_sentence )
 )
 
-tail_terms = ( nonabs_terms? VAU_elidible free* )
+# (6a9616e): 20160323 "reverting the term grammar dichotomy between absorbable and nonabsorbable terms."
+tail_terms = ( terms? VAU_elidible free* )
 
 terms = ( terms_1+ )
 
 terms_1 = ( terms_2 (pehe_sa* PEhE_clause free* joik_jek terms_2)* )
 
-terms_2 = ( abs_term ( cehe_sa* CEhE_clause free* abs_term )* )
-
-nonabs_terms = ( nonabs_terms_1+ )
-
-nonabs_terms_1 = (
-  nonabs_terms_2
-  ( pehe_sa* PEhE_clause free* joik_jek nonabs_terms_2 )*
-)
-
-nonabs_terms_2 = (
-  term
-  ( cehe_sa* CEhE_clause free* term )*
-)
+# (6a9616e): 20160323
+# (1e01967): 20160327 "Fixing selbritcita term absorbtion for termsets"
+terms_2 = ( term ( cehe_sa* CEhE_clause free* nonabs_term )* )
 
 pehe_sa = (
   PEhE_clause
@@ -201,21 +204,32 @@ cehe_sa = (
 
 term = ( term_sa* term_1 )
 
+# (6a9616e): 20160323
+# (b36e55d): 20160907 "Fixing {vi bai broda}"
 term_1 = (
   sumti
-  / ( !gek ( tag / ( FA_clause free* ) ) ( sumti / ( KU_elidible free* ) ) )
-  / nonabs_termset
+  / (
+    !gek
+    ( ( tag !(!tag selbri) ) / ( FA_clause free* ) )
+    ( sumti / ( KU_elidible free* ) )
+  )
+  / termset
   / ( NA_clause KU_clause free* )
 )
 
-abs_term = ( term_sa* abs_term_1 )
-
-abs_term_1 = ( sumti / abs_tag_term / termset / ( NA_clause KU_clause free* ) )
-
-abs_tag_term = (
-  !gek
-  ( ( tag !( !tag selbri ) !gek_sentence ) / ( FA_clause free* ) )
-  ( sumti / ( KU_elidible free* ) )
+# (e9f5786): 20160327 "Fixing {broda be ba brode} and {ko'a pe ba brode}"
+nonabs_term = (
+  term_sa*
+  (
+    sumti
+    / (
+      !gek
+      ( tag / ( FA_clause free* ) )
+      ( sumti / ( KU_elidible free* ) )
+    )
+    / termset
+    / ( NA_clause KU_clause free* )
+  )
 )
 
 term_sa = (
@@ -246,29 +260,31 @@ termset = (
 
 gek_termset = ( gek terms_gik_terms )
 
-terms_gik_terms = ( abs_term ( gik / terms_gik_terms ) abs_term )
-
-nonabs_termset = (
-  nonabs_gek_termset
-  / ( NUhI_clause free* gek terms NUhU_elidible free* gik nonabs_terms NUhU_elidible free* )
-  / ( NUhI_clause free* nonabs_terms NUhU_elidible free* )
-)
-
-nonabs_gek_termset = ( gek nonabs_terms_gik_terms )
-
-nonabs_terms_gik_terms = ( term ( gik / nonabs_terms_gik_terms ) term )
+# (6a9616e): 20160323
+# (1e01967): 20160327
+terms_gik_terms = ( nonabs_term ( gik / terms_gik_terms ) nonabs_term )
 
 sumti = ( sumti_1 ( VUhO_clause free* relative_clauses )? )
 
 sumti_1 = (
-  sumti_2 ( joik_ek stag? KE_clause free* sumti KEhE_elidible free* )?
+  sumti_2
+  ( joik_ek stag? KE_clause free* sumti KEhE_elidible free* )?
 )
 
-sumti_2 = ( sumti_3 ( joik_ek sumti_3 )* )
+sumti_2 = (
+  sumti_3
+  ( joik_ek sumti_3 )*
+)
 
-sumti_3 = ( sumti_4 ( joik_ek stag? BO_clause free* sumti_3 )? )
+sumti_3 = (
+  sumti_4
+  ( joik_ek stag? BO_clause free* sumti_3 )?
+)
 
-sumti_4 = ( sumti_5 / ( gek sumti gik sumti_4 ) )
+sumti_4 = (
+  sumti_5
+  / ( gek sumti gik sumti_4 )
+)
 
 sumti_5 = (
   ( quantifier? sumti_6 relative_clauses? )
@@ -324,8 +340,9 @@ relative_clause_sa = (
   &relative_clause_1
 )
 
+# (e9f5786): 20160327
 relative_clause_1 = (
-  ( GOI_clause free* term GEhU_elidible free* )
+  ( GOI_clause free* nonabs_term GEhU_elidible free* )
   / ( NOI_clause free* subsentence KUhO_elidible free* )
 )
 
@@ -333,9 +350,15 @@ relative_clause_start = ( GOI_clause / NOI_clause )
 
 selbri = ( tag? selbri_1 )
 
-selbri_1 = ( selbri_2 / ( NA_clause free* selbri ) )
+selbri_1 = (
+  selbri_2
+  / ( NA_clause free* selbri )
+)
 
-selbri_2 = ( selbri_3 ( CO_clause free* selbri_2 )? )
+selbri_2 = (
+  selbri_3
+  ( CO_clause free* selbri_2 )?
+)
 
 selbri_3 = ( selbri_4+ )
 
@@ -347,7 +370,12 @@ selbri_4 = (
   )*
 )
 
-selbri_5 = ( selbri_6 ( ( jek / joik ) stag? BO_clause free* selbri_5 )? )
+selbri_5 = (
+  selbri_6
+  (
+    ( jek / joik ) stag? BO_clause free* selbri_5
+  )?
+)
 
 selbri_6 = (
   ( tanru_unit ( BO_clause free* selbri_6 )? )
@@ -381,7 +409,8 @@ tanru_unit_2 = (
 
 linkargs = ( linkargs_sa* linkargs_1 )
 
-linkargs_1 = ( BE_clause free* term links? BEhO_elidible free* )
+# (e9f5786): 20160327
+linkargs_1 = ( BE_clause free* nonabs_term links? BEhO_elidible free* )
 
 linkargs_sa = (
   linkargs_start
@@ -394,7 +423,8 @@ linkargs_start = ( &BE_clause BE_clause )
 
 links = ( links_sa* links_1 )
 
-links_1 = ( BEI_clause free* term links? )
+# (e9f5786): 20160327
+links_1 = ( BEI_clause free* nonabs_term links? )
 
 links_sa = (
   links_start
@@ -412,7 +442,10 @@ quantifier = (
 
 mex = ( mex_sa* mex_0 )
 
-mex_0 = ( ( mex_1 ( operator mex_1 )* ) / rp_clause )
+mex_0 = (
+  ( mex_1 ( operator mex_1 )* )
+  / rp_clause
+)
 
 mex_sa = (
   mex_start
@@ -442,8 +475,8 @@ fore_operands = ( mex_2+ )
 
 rp_expression = ( operand rp_expression_tail )
 
+# (ntsekees/0511e15): 20151210 "ningau lo pegjese"
 rp_expression_tail = ( ( rp_expression operator rp_expression_tail ) / "" )
-# NOTE: ilmentufa/camxes.js.peg has () for ""
 
 operator = ( operator_sa* operator_0 )
 
@@ -677,7 +710,11 @@ vocative = (
 indicators = ( FUhE_clause? indicator+ )
 
 indicator = (
-  ( ( ( UI_clause / CAI_clause ) NAI_clause? ) / DAhO_clause / FUhO_clause )
+  (
+    ( ( UI_clause / CAI_clause ) NAI_clause? )
+    / DAhO_clause
+    / FUhO_clause
+  )
   !BU_clause
 )
 
@@ -685,17 +722,29 @@ indicator = (
 
 zei_clause = ( pre_clause zei_clause_no_pre )
 
-zei_clause_no_pre = ( pre_zei_bu ( zei_tail? bu_tail )* zei_tail post_clause )
+# (6fc2492): 20160814 "allowing faking left-grouping of BU tails"
+zei_clause_no_pre = (
+  pre_zei_bu
+  ( zei_tail? BU_clause+ )*
+  zei_tail
+  post_clause
+)
 
 bu_clause = ( pre_clause bu_clause_no_pre )
 
-bu_clause_no_pre = ( pre_zei_bu ( bu_tail? zei_tail )* bu_tail post_clause )
+# (6fc2492): 20160814
+bu_clause_no_pre = (
+  pre_zei_bu
+  ( BU_clause* zei_tail )*
+  BU_clause+
+  post_clause
+)
 
 zei_tail = ( ZEI_clause any_word )+
 
-bu_tail = ( BU_clause+ )
-
+# (ntsekees/0030386): 20151116
 pre_zei_bu = (
+  !ZOI_start
   !BU_clause
   !ZEI_clause
   !SI_clause
@@ -710,7 +759,8 @@ dot_star = ~"."*
 
 post_clause = ( spaces? si_clause? !ZEI_clause !BU_clause indicators* )
 
-pre_clause = ( BAhE_clause? )
+# (1ab6645): 20160814 "enabling applying a left-recursion faking parser action on pre_clause"
+pre_clause = BAhE_clause*
 
 any_word_SA_handling = (
   BRIVLA_pre
@@ -755,11 +805,13 @@ erasable_clause = (
   / ( zei_clause_no_pre !ZEI_clause !BU_clause )
 )
 
-sa_word = ( pre_zei_bu )
+sa_word = ( &pre_zei_bu pre_zei_bu )
 
-si_word = ( pre_zei_bu )
+si_word = ( &pre_zei_bu pre_zei_bu )
 
+# (ntsekees/0030386): 20151116
 su_word = (
+  !ZOI_start
   !NIhO_clause
   !LU_clause
   !TUhE_clause
@@ -800,55 +852,56 @@ VEhO_elidible = ( VEhO_clause? )
 
 BRIVLA_clause = ( ( BRIVLA_pre BRIVLA_post ) / zei_clause )
 BRIVLA_pre = ( pre_clause BRIVLA spaces? )
-BRIVLA_post = ( post_clause )
+BRIVLA_post = ( &post_clause post_clause )
 
 CMEVLA_clause = ( CMEVLA_pre CMEVLA_post )
 CMEVLA_pre = ( pre_clause CMEVLA spaces? )
-CMEVLA_post = ( post_clause )
+CMEVLA_post = ( &post_clause post_clause )
 
 CMAVO_clause = ( CMAVO_pre CMAVO_post )
 CMAVO_pre = ( pre_clause CMAVO spaces? )
-CMAVO_post = ( post_clause )
+CMAVO_post = ( &post_clause post_clause )
 
 A_clause = ( A_pre A_post )
 A_pre = ( pre_clause A spaces? )
-A_post = ( post_clause )
+A_post = ( &post_clause post_clause )
 
 BAI_clause = ( BAI_pre BAI_post )
 BAI_pre = ( pre_clause BAI spaces? )
-BAI_post = ( post_clause )
+BAI_post = ( &post_clause post_clause )
 
-BAhE_clause = ( ( BAhE_pre BAhE_post )+ )
+# (1ab6645): 20160814
+BAhE_clause = ( BAhE_pre BAhE_post )
 BAhE_pre = ( BAhE spaces? )
 BAhE_post = ( si_clause? !ZEI_clause !BU_clause )
 
 BE_clause = ( BE_pre BE_post )
 BE_pre = ( pre_clause BE spaces? )
-BE_post = ( post_clause )
+BE_post = ( &post_clause post_clause )
 
 BEI_clause = ( BEI_pre BEI_post )
 BEI_pre = ( pre_clause BEI spaces? )
-BEI_post = ( post_clause )
+BEI_post = ( &post_clause post_clause )
 
 BEhO_clause = ( BEhO_pre BEhO_post )
 BEhO_pre = ( pre_clause BEhO spaces? )
-BEhO_post = ( post_clause )
+BEhO_post = ( &post_clause post_clause )
 
 BIhE_clause = ( BIhE_pre BIhE_post )
 BIhE_pre = ( pre_clause BIhE spaces? )
-BIhE_post = ( post_clause )
+BIhE_post = ( &post_clause post_clause )
 
 BIhI_clause = ( BIhI_pre BIhI_post )
 BIhI_pre = ( pre_clause BIhI spaces? )
-BIhI_post = ( post_clause )
+BIhI_post = ( &post_clause post_clause )
 
 BO_clause = ( BO_pre BO_post )
 BO_pre = ( pre_clause BO spaces? )
-BO_post = ( post_clause )
+BO_post = ( &post_clause post_clause )
 
 BOI_clause = ( BOI_pre BOI_post )
 BOI_pre = ( pre_clause BOI spaces? )
-BOI_post = ( post_clause )
+BOI_post = ( &post_clause post_clause )
 
 BU_clause = ( BU_pre BU_post )
 BU_pre = ( pre_clause BU spaces? )
@@ -856,81 +909,81 @@ BU_post = ( spaces? )
 
 BY_clause = ( ( BY_pre BY_post ) / bu_clause )
 BY_pre = ( pre_clause BY spaces? )
-BY_post = ( post_clause )
+BY_post = ( &post_clause post_clause )
 
 CAhA_clause = ( CAhA_pre CAhA_post )
 CAhA_pre = ( pre_clause CAhA spaces? )
-CAhA_post = ( post_clause )
+CAhA_post = ( &post_clause post_clause )
 
 CAI_clause = ( CAI_pre CAI_post )
 CAI_pre = ( pre_clause CAI spaces? )
-CAI_post = ( post_clause )
+CAI_post = ( &post_clause post_clause )
 
 CEI_clause = ( CEI_pre CEI_post )
 CEI_pre = ( pre_clause CEI spaces? )
-CEI_post = ( post_clause )
+CEI_post = ( &post_clause post_clause )
 
 CEhE_clause = ( CEhE_pre CEhE_post )
 CEhE_pre = ( pre_clause CEhE spaces? )
-CEhE_post = ( post_clause )
+CEhE_post = ( &post_clause post_clause )
 
 CO_clause = ( CO_pre CO_post )
 CO_pre = ( pre_clause CO spaces? )
-CO_post = ( post_clause )
+CO_post = ( &post_clause post_clause )
 
 COI_clause = ( COI_pre COI_post )
 COI_pre = ( pre_clause COI spaces? )
-COI_post = ( post_clause )
+COI_post = ( &post_clause post_clause )
 
 CU_clause = ( CU_pre CU_post )
 CU_pre = ( pre_clause CU spaces? )
-CU_post = ( post_clause )
+CU_post = ( &post_clause post_clause )
 
 CUhE_clause = ( CUhE_pre CUhE_post )
 CUhE_pre = ( pre_clause CUhE spaces? )
-CUhE_post = ( post_clause )
+CUhE_post = ( &post_clause post_clause )
 
 DAhO_clause = ( DAhO_pre DAhO_post )
 DAhO_pre = ( pre_clause DAhO spaces? )
-DAhO_post = ( post_clause )
+DAhO_post = ( &post_clause post_clause )
 
 DOI_clause = ( DOI_pre DOI_post )
 DOI_pre = ( pre_clause DOI spaces? )
-DOI_post = ( post_clause )
+DOI_post = ( &post_clause post_clause )
 
 DOhU_clause = ( DOhU_pre DOhU_post )
 DOhU_pre = ( pre_clause DOhU spaces? )
-DOhU_post = ( post_clause )
+DOhU_post = ( &post_clause post_clause )
 
 FA_clause = ( FA_pre FA_post )
 FA_pre = ( pre_clause FA spaces? )
-FA_post = ( post_clause )
+FA_post = ( &post_clause post_clause )
 
 FAhA_clause = ( FAhA_pre FAhA_post )
 FAhA_pre = ( pre_clause FAhA spaces? )
-FAhA_post = ( post_clause )
+FAhA_post = ( &post_clause post_clause )
 
 FAhO_clause = ( pre_clause FAhO spaces? )
 
 FEhE_clause = ( FEhE_pre FEhE_post )
 FEhE_pre = ( pre_clause FEhE spaces? )
-FEhE_post = ( post_clause )
+FEhE_post = ( &post_clause post_clause )
 
 FEhU_clause = ( FEhU_pre FEhU_post )
 FEhU_pre = ( pre_clause FEhU spaces? )
-FEhU_post = ( post_clause )
+FEhU_post = ( &post_clause post_clause )
 
 FIhO_clause = ( FIhO_pre FIhO_post )
 FIhO_pre = ( pre_clause FIhO spaces? )
-FIhO_post = ( post_clause )
+FIhO_post = ( &post_clause post_clause )
 
 FOI_clause = ( FOI_pre FOI_post )
 FOI_pre = ( pre_clause FOI spaces? )
-FOI_post = ( post_clause )
+FOI_post = ( &post_clause post_clause )
 
 FUhA_clause = ( FUhA_pre FUhA_post )
 FUhA_pre = ( pre_clause FUhA spaces? )
-FUhA_post = ( post_clause )
+FUhA_post = ( &post_clause post_clause )
 
 FUhE_clause = ( FUhE_pre FUhE_post )
 FUhE_pre = ( pre_clause FUhE spaces? )
@@ -938,107 +991,107 @@ FUhE_post = ( !BU_clause spaces? !ZEI_clause !BU_clause )
 
 FUhO_clause = ( FUhO_pre FUhO_post )
 FUhO_pre = ( pre_clause FUhO spaces? )
-FUhO_post = ( post_clause )
+FUhO_post = ( &post_clause post_clause )
 
 GA_clause = ( GA_pre GA_post )
 GA_pre = ( pre_clause GA spaces? )
-GA_post = ( post_clause )
+GA_post = ( &post_clause post_clause )
 
 GAhO_clause = ( GAhO_pre GAhO_post )
 GAhO_pre = ( pre_clause GAhO spaces? )
-GAhO_post = ( post_clause )
+GAhO_post = ( &post_clause post_clause )
 
 GEhU_clause = ( GEhU_pre GEhU_post )
 GEhU_pre = ( pre_clause GEhU spaces? )
-GEhU_post = ( post_clause )
+GEhU_post = ( &post_clause post_clause )
 
 GI_clause = ( GI_pre GI_post )
 GI_pre = ( pre_clause GI spaces? )
-GI_post = ( post_clause )
+GI_post = ( &post_clause post_clause )
 
 GIhA_clause = ( GIhA_pre GIhA_post )
 GIhA_pre = ( pre_clause GIhA spaces? )
-GIhA_post = ( post_clause )
+GIhA_post = ( &post_clause post_clause )
 
 GOI_clause = ( GOI_pre GOI_post )
 GOI_pre = ( pre_clause GOI spaces? )
-GOI_post = ( post_clause )
+GOI_post = ( &post_clause post_clause )
 
 GOhA_clause = ( GOhA_pre GOhA_post )
 GOhA_pre = ( pre_clause GOhA spaces? )
-GOhA_post = ( post_clause )
+GOhA_post = ( &post_clause post_clause )
 
 GUhA_clause = ( GUhA_pre GUhA_post )
 GUhA_pre = ( pre_clause GUhA spaces? )
-GUhA_post = ( post_clause )
+GUhA_post = ( &post_clause post_clause )
 
 I_clause = ( sentence_sa* I_pre I_post )
 I_pre = ( pre_clause I spaces? )
-I_post = ( post_clause )
+I_post = ( &post_clause post_clause )
 
 JA_clause = ( JA_pre JA_post )
 JA_pre = ( pre_clause JA spaces? )
-JA_post = ( post_clause )
+JA_post = ( &post_clause post_clause )
 
 JAI_clause = ( JAI_pre JAI_post )
 JAI_pre = ( pre_clause JAI spaces? )
-JAI_post = ( post_clause )
+JAI_post = ( &post_clause post_clause )
 
 JOhI_clause = ( JOhI_pre JOhI_post )
 JOhI_pre = ( pre_clause JOhI spaces? )
-JOhI_post = ( post_clause )
+JOhI_post = ( &post_clause post_clause )
 
 JOI_clause = ( JOI_pre JOI_post )
 JOI_pre = ( pre_clause JOI spaces? )
-JOI_post = ( post_clause )
+JOI_post = ( &post_clause post_clause )
 
 KE_clause = ( KE_pre KE_post )
 KE_pre = ( pre_clause KE spaces? )
-KE_post = ( post_clause )
+KE_post = ( &post_clause post_clause )
 
 KEhE_clause = ( KEhE_pre KEhE_post )
 KEhE_pre = ( pre_clause KEhE spaces? )
-KEhE_post = ( post_clause )
+KEhE_post = ( &post_clause post_clause )
 
 KEI_clause = ( KEI_pre KEI_post )
 KEI_pre = ( pre_clause KEI spaces? )
-KEI_post = ( post_clause )
+KEI_post = ( &post_clause post_clause )
 
 KI_clause = ( KI_pre KI_post )
 KI_pre = ( pre_clause KI spaces? )
-KI_post = ( post_clause )
+KI_post = ( &post_clause post_clause )
 
 KOhA_clause = ( KOhA_pre KOhA_post )
 KOhA_pre = ( pre_clause KOhA spaces? )
-KOhA_post = ( post_clause )
+KOhA_post = ( &post_clause post_clause )
 
 KU_clause = ( KU_pre KU_post )
 KU_pre = ( pre_clause KU spaces? )
-KU_post = ( post_clause )
+KU_post = ( &post_clause post_clause )
 
 KUhE_clause = ( KUhE_pre KUhE_post )
 KUhE_pre = ( pre_clause KUhE spaces? )
-KUhE_post = ( post_clause )
+KUhE_post = ( &post_clause post_clause )
 
 KUhO_clause = ( KUhO_pre KUhO_post )
 KUhO_pre = ( pre_clause KUhO spaces? )
-KUhO_post = ( post_clause )
+KUhO_post = ( &post_clause post_clause )
 
 LA_clause = ( LA_pre LA_post )
 LA_pre = ( pre_clause LA spaces? )
-LA_post = ( post_clause )
+LA_post = ( &post_clause post_clause )
 
 LAU_clause = ( LAU_pre LAU_post )
 LAU_pre = ( pre_clause LAU spaces? )
-LAU_post = ( post_clause )
+LAU_post = ( &post_clause post_clause )
 
 LAhE_clause = ( LAhE_pre LAhE_post )
 LAhE_pre = ( pre_clause LAhE spaces? )
-LAhE_post = ( post_clause )
+LAhE_post = ( &post_clause post_clause )
 
 LE_clause = ( LE_pre LE_post )
 LE_pre = ( pre_clause LE spaces? )
-LE_post = ( post_clause )
+LE_post = ( &post_clause post_clause )
 
 LEhU_clause = ( LEhU_pre LEhU_post )
 LEhU_pre = ( pre_clause LEhU spaces? )
@@ -1046,75 +1099,76 @@ LEhU_post = ( spaces? )
 
 LI_clause = ( LI_pre LI_post )
 LI_pre = ( pre_clause LI spaces? )
-LI_post = ( post_clause )
+LI_post = ( &post_clause post_clause )
 
 LIhU_clause = ( LIhU_pre LIhU_post )
 LIhU_pre = ( pre_clause LIhU spaces? )
-LIhU_post = ( post_clause )
+LIhU_post = ( &post_clause post_clause )
 
 LOhO_clause = ( LOhO_pre LOhO_post )
 LOhO_pre = ( pre_clause LOhO spaces? )
-LOhO_post = ( post_clause )
+LOhO_post = ( &post_clause post_clause )
 
 LOhU_clause = ( LOhU_pre LOhU_post )
 LOhU_pre = ( pre_clause LOhU spaces? ( !LEhU any_word )* LEhU_clause spaces? )
-LOhU_post = ( post_clause )
+LOhU_post = ( &post_clause post_clause )
 
 LU_clause = ( LU_pre LU_post )
 LU_pre = ( pre_clause LU spaces? )
-LU_post = ( post_clause )
+# (654144e): 20160814 "indicators don't attach to LU anymore"
+LU_post = ( spaces? si_clause? !ZEI_clause !BU_clause )
 
 LUhU_clause = ( LUhU_pre LUhU_post )
 LUhU_pre = ( pre_clause LUhU spaces? )
-LUhU_post = ( post_clause )
+LUhU_post = ( &post_clause post_clause )
 
 MAhO_clause = ( MAhO_pre MAhO_post )
 MAhO_pre = ( pre_clause MAhO spaces? )
-MAhO_post = ( post_clause )
+MAhO_post = ( &post_clause post_clause )
 
 MAI_clause = ( MAI_pre MAI_post )
 MAI_pre = ( pre_clause MAI spaces? )
-MAI_post = ( post_clause )
+MAI_post = ( &post_clause post_clause )
 
 ME_clause = ( ME_pre ME_post )
 ME_pre = ( pre_clause ME spaces? )
-ME_post = ( post_clause )
+ME_post = ( &post_clause post_clause )
 
 MEhU_clause = ( MEhU_pre MEhU_post )
 MEhU_pre = ( pre_clause MEhU spaces? )
-MEhU_post = ( post_clause )
+MEhU_post = ( &post_clause post_clause )
 
 MOhE_clause = ( MOhE_pre MOhE_post )
 MOhE_pre = ( pre_clause MOhE spaces? )
-MOhE_post = ( post_clause )
+MOhE_post = ( &post_clause post_clause )
 
 MOhI_clause = ( MOhI_pre MOhI_post )
 MOhI_pre = ( pre_clause MOhI spaces? )
-MOhI_post = ( post_clause )
+MOhI_post = ( &post_clause post_clause )
 
 MOI_clause = ( MOI_pre MOI_post )
 MOI_pre = ( pre_clause MOI spaces? )
-MOI_post = ( post_clause )
+MOI_post = ( &post_clause post_clause )
 
 NA_clause = ( NA_pre NA_post )
 NA_pre = ( pre_clause NA spaces? )
-NA_post = ( post_clause )
+NA_post = ( &post_clause post_clause )
 
 NAI_clause = ( NAI_pre NAI_post )
 NAI_pre = ( pre_clause NAI spaces? )
-NAI_post = ( post_clause )
+NAI_post = ( &post_clause post_clause )
 
 NAhE_clause = ( NAhE_pre NAhE_post )
 NAhE_pre = ( pre_clause NAhE spaces? )
-NAhE_post = ( post_clause )
+NAhE_post = ( &post_clause post_clause )
 
 NAhU_clause = ( NAhU_pre NAhU_post )
 NAhU_pre = ( pre_clause NAhU spaces? )
-NAhU_post = ( post_clause )
+NAhU_post = ( &post_clause post_clause )
 
 NIhE_clause = ( NIhE_pre NIhE_post )
 NIhE_pre = ( pre_clause NIhE spaces? )
-NIhE_post = ( post_clause )
+NIhE_post = ( &post_clause post_clause )
 
 NIhO_clause = ( sentence_sa* NIhO_pre NIhO_post )
 NIhO_pre = ( pre_clause NIhO spaces? )
@@ -1122,47 +1176,47 @@ NIhO_post = ( su_clause* post_clause )
 
 NOI_clause = ( NOI_pre NOI_post )
 NOI_pre = ( pre_clause NOI spaces? )
-NOI_post = ( post_clause )
+NOI_post = ( &post_clause post_clause )
 
 NU_clause = ( NU_pre NU_post )
 NU_pre = ( pre_clause NU spaces? )
-NU_post = ( post_clause )
+NU_post = ( &post_clause post_clause )
 
 NUhA_clause = ( NUhA_pre NUhA_post )
 NUhA_pre = ( pre_clause NUhA spaces? )
-NUhA_post = ( post_clause )
+NUhA_post = ( &post_clause post_clause )
 
 NUhI_clause = ( NUhI_pre NUhI_post )
 NUhI_pre = ( pre_clause NUhI spaces? )
-NUhI_post = ( post_clause )
+NUhI_post = ( &post_clause post_clause )
 
 NUhU_clause = ( NUhU_pre NUhU_post )
 NUhU_pre = ( pre_clause NUhU spaces? )
-NUhU_post = ( post_clause )
+NUhU_post = ( &post_clause post_clause )
 
 PA_clause = ( PA_pre PA_post )
 PA_pre = ( pre_clause PA spaces? )
-PA_post = ( post_clause )
+PA_post = ( &post_clause post_clause )
 
 PEhE_clause = ( PEhE_pre PEhE_post )
 PEhE_pre = ( pre_clause PEhE spaces? )
-PEhE_post = ( post_clause )
+PEhE_post = ( &post_clause post_clause )
 
 PEhO_clause = ( PEhO_pre PEhO_post )
 PEhO_pre = ( pre_clause PEhO spaces? )
-PEhO_post = ( post_clause )
+PEhO_post = ( &post_clause post_clause )
 
 PU_clause = ( PU_pre PU_post )
 PU_pre = ( pre_clause PU spaces? )
-PU_post = ( post_clause )
+PU_post = ( &post_clause post_clause )
 
 RAhO_clause = ( RAhO_pre RAhO_post )
 RAhO_pre = ( pre_clause RAhO spaces? )
-RAhO_post = ( post_clause )
+RAhO_post = ( &post_clause post_clause )
 
 ROI_clause = ( ROI_pre ROI_post )
 ROI_pre = ( pre_clause ROI spaces? )
-ROI_post = ( post_clause )
+ROI_post = ( &post_clause post_clause )
 
 SA_clause = ( SA_pre SA_post )
 SA_pre = ( pre_clause SA spaces? )
@@ -1170,45 +1224,45 @@ SA_post = ( spaces? )
 
 SE_clause = ( SE_pre SE_post )
 SE_pre = ( pre_clause SE spaces? )
-SE_post = ( post_clause )
+SE_post = ( &post_clause post_clause )
 
 SEI_clause = ( SEI_pre SEI_post )
 SEI_pre = ( pre_clause SEI spaces? )
-SEI_post = ( post_clause )
+SEI_post = ( &post_clause post_clause )
 
 SEhU_clause = ( SEhU_pre SEhU_post )
 SEhU_pre = ( pre_clause SEhU spaces? )
-SEhU_post = ( post_clause )
+SEhU_post = ( &post_clause post_clause )
 
 SI_clause = ( spaces? SI spaces? )
 
 SOI_clause = ( SOI_pre SOI_post )
 SOI_pre = ( pre_clause SOI spaces? )
-SOI_post = ( post_clause )
+SOI_post = ( &post_clause post_clause )
 
 SU_clause = ( SU_pre SU_post )
 SU_pre = ( pre_clause SU spaces? )
-SU_post = ( post_clause )
+SU_post = ( &post_clause post_clause )
 
 TAhE_clause = ( TAhE_pre TAhE_post )
 TAhE_pre = ( pre_clause TAhE spaces? )
-TAhE_post = ( post_clause )
+TAhE_post = ( &post_clause post_clause )
 
 TEhU_clause = ( TEhU_pre TEhU_post )
 TEhU_pre = ( pre_clause TEhU spaces? )
-TEhU_post = ( post_clause )
+TEhU_post = ( &post_clause post_clause )
 
 TEI_clause = ( TEI_pre TEI_post )
 TEI_pre = ( pre_clause TEI spaces? )
-TEI_post = ( post_clause )
+TEI_post = ( &post_clause post_clause )
 
 TO_clause = ( TO_pre TO_post )
 TO_pre = ( pre_clause TO spaces? )
-TO_post = ( post_clause )
+TO_post = ( &post_clause post_clause )
 
 TOI_clause = ( TOI_pre TOI_post )
 TOI_pre = ( pre_clause TOI spaces? )
-TOI_post = ( post_clause )
+TOI_post = ( &post_clause post_clause )
 
 TUhE_clause = ( TUhE_pre TUhE_post )
 TUhE_pre = ( pre_clause TUhE spaces? )
@@ -1216,55 +1270,55 @@ TUhE_post = ( su_clause* post_clause )
 
 TUhU_clause = ( TUhU_pre TUhU_post )
 TUhU_pre = ( pre_clause TUhU spaces? )
-TUhU_post = ( post_clause )
+TUhU_post = ( &post_clause post_clause )
 
 UI_clause = ( UI_pre UI_post )
 UI_pre = ( pre_clause UI spaces? )
-UI_post = ( post_clause )
+UI_post = ( &post_clause post_clause )
 
 VA_clause = ( VA_pre VA_post )
 VA_pre = ( pre_clause VA spaces? )
-VA_post = ( post_clause )
+VA_post = ( &post_clause post_clause )
 
 VAU_clause = ( VAU_pre VAU_post )
 VAU_pre = ( pre_clause VAU spaces? )
-VAU_post = ( post_clause )
+VAU_post = ( &post_clause post_clause )
 
 VEI_clause = ( VEI_pre VEI_post )
 VEI_pre = ( pre_clause VEI spaces? )
-VEI_post = ( post_clause )
+VEI_post = ( &post_clause post_clause )
 
 VEhO_clause = ( VEhO_pre VEhO_post )
 VEhO_pre = ( pre_clause VEhO spaces? )
-VEhO_post = ( post_clause )
+VEhO_post = ( &post_clause post_clause )
 
 VUhU_clause = ( VUhU_pre VUhU_post )
 VUhU_pre = ( pre_clause VUhU spaces? )
-VUhU_post = ( post_clause )
+VUhU_post = ( &post_clause post_clause )
 
 VEhA_clause = ( VEhA_pre VEhA_post )
 VEhA_pre = ( pre_clause VEhA spaces? )
-VEhA_post = ( post_clause )
+VEhA_post = ( &post_clause post_clause )
 
 VIhA_clause = ( VIhA_pre VIhA_post )
 VIhA_pre = ( pre_clause VIhA spaces? )
-VIhA_post = ( post_clause )
+VIhA_post = ( &post_clause post_clause )
 
 VUhO_clause = ( VUhO_pre VUhO_post )
 VUhO_pre = ( pre_clause VUhO spaces? )
-VUhO_post = ( post_clause )
+VUhO_post = ( &post_clause post_clause )
 
 XI_clause = ( XI_pre XI_post )
 XI_pre = ( pre_clause XI spaces? )
-XI_post = ( post_clause )
+XI_post = ( &post_clause post_clause )
 
 ZAhO_clause = ( ZAhO_pre ZAhO_post )
 ZAhO_pre = ( pre_clause ZAhO spaces? )
-ZAhO_post = ( post_clause )
+ZAhO_post = ( &post_clause post_clause )
 
 ZEhA_clause = ( ZEhA_pre ZEhA_post )
 ZEhA_pre = ( pre_clause ZEhA spaces? )
-ZEhA_post = ( post_clause )
+ZEhA_post = ( &post_clause post_clause )
 
 ZEI_clause = ( ZEI_pre ZEI_post )
 ZEI_pre = ( pre_clause ZEI spaces? )
@@ -1272,34 +1326,38 @@ ZEI_post = ( spaces? )
 
 ZI_clause = ( ZI_pre ZI_post )
 ZI_pre = ( pre_clause ZI spaces? )
-ZI_post = ( post_clause )
+ZI_post = ( &post_clause post_clause )
 
 ZIhE_clause = ( ZIhE_pre ZIhE_post )
 ZIhE_pre = ( pre_clause ZIhE spaces? )
-ZIhE_post = ( post_clause )
+ZIhE_post = ( &post_clause post_clause )
 
 ZO_clause = ( ZO_pre ZO_post )
 ZO_pre = ( pre_clause ZO spaces? any_word spaces? )
-ZO_post = ( post_clause )
+ZO_post = ( &post_clause post_clause )
 
 ZOI_clause = ( ZOI_pre ZOI_post )
+# (dc5b013): 20160318 "moving spaces from zoi_word to ZOI_pre"
 ZOI_pre = (
   pre_clause
   ZOI spaces?
   zoi_open
   spaces?
-  zoi_word*
+  ( zoi_word spaces )*
   zoi_close
   spaces?
 )
-ZOI_post = ( post_clause )
+ZOI_post = ( &post_clause post_clause )
+# (ntsekees/0030386): 20151116
+ZOI_start = ( !ZOI_pre ZOI )
 
 ZOhU_clause = ( ZOhU_pre ZOhU_post )
 ZOhU_pre = ( pre_clause ZOhU spaces? )
-ZOhU_post = ( post_clause )
+ZOhU_post = ( &post_clause post_clause )
 
 # ___ MORPHOLOGY ___
 
+# not in camxes-ilmen
 morphology = (
   initial_spaces?
   (
@@ -1309,6 +1367,8 @@ morphology = (
 )
 
 CMEVLA = ( &cmevla cmevla )
+# (dc5b013): 20160318 "removing the useless node gismu_2"
+BRIVLA = ( gismu / fuhivla / lujvo )
 
 CMAVO = (
   A
@@ -1336,6 +1396,7 @@ CMAVO = (
 
 # ___ VLATAI ___
 
+# not in camxes-ilmen
 vlatai = (
   vlatai_spaces?
   (
@@ -1388,23 +1449,30 @@ tosmabru = cmavo+ ( gismu / lujvo / fuhivla )
 
 lojban_word = ( CMEVLA / CMAVO / BRIVLA )
 
-BRIVLA = ( gismu_2 / fuhivla / lujvo )
-
-gismu_2 = ( &gismu gismu )
-
 any_word = ( lojban_word spaces? )
 
 zoi_open = ( &lojban_word lojban_word )
-zoi_word = ( non_space+ spaces )
-zoi_close = ( &lojban_word lojban_word )
+
+# (dc5b013): 20160318
+zoi_word_2 = non_space+
+zoi_word = ( &zoi_word_2 zoi_word_2 )
+
+# (ntsekees/aaa108f): fixes, "gimyinda" and "ni'o ni'o pa mo'o ni'o"
+zoi_close = ( &any_word any_word )
 
 # ____
 
 cmevla = ( jbocme / zifcme )
 
-zifcme = ( !h ( nucleus / glide / h / ( consonant !pause ) / digit )* consonant &pause )
+zifcme = (
+  !h
+  ( nucleus / glide / h / ( consonant !pause ) / digit )*
+  consonant
+  &pause
+)
 
-jbocme = ( &zifcme ( any_syllable / digit )* &pause )
+# (685038d): 20190605 "jbocme rule for preventing left recursion"
+jbocme = ( &zifcme ( any_syllable / digit )+ &pause )
 
 # ____
 
@@ -1428,7 +1496,7 @@ cmavo_form = (
 
 # ____
 
-lujvo = ( !gismu !fuhivla !cmavo initial_rafsi* brivla_core )
+brivla = !cmavo initial_rafsi* brivla_core
 
 brivla_core = (
   fuhivla
@@ -1480,8 +1548,10 @@ brivla_rafsi = (
   h?
 )
 
-stressed_fuhivla_rafsi = ( fuhivla_head stressed_syllable !h onset y )
+# (ntsekees/9ae16d8): 20150525
+stressed_fuhivla_rafsi = ( fuhivla_head stressed_syllable consonantal_syllable* !h onset y )
 
+# (ntsekees/9ae16d8): 20150525
 fuhivla_rafsi = ( &unstressed_syllable fuhivla_head !h onset y h? )
 
 fuhivla_head = ( !rafsi_string brivla_head )
@@ -1507,8 +1577,10 @@ rafsi_string = (
 # ____
 
 gismu = (
-  ( ( initial_pair stressed_vowel )
-    / ( consonant stressed_vowel consonant ) )
+  (
+    ( initial_pair stressed_vowel )
+    / ( consonant stressed_vowel consonant )
+  )
   &final_syllable
   consonant
   vowel
@@ -1607,7 +1679,8 @@ unstressed_diphthong = ( !stressed diphthong !stress )
 
 unstressed_vowel = ( !stressed vowel !stress )
 
-stress = ( consonant* h? y? syllable pause )
+# (ntsekees/9ae16d8): 20150525
+stress = ( ( consonant / glide )* h? y? syllable pause )
 
 stressed = ( onset comma* ~"[AEIOU]" )
 
@@ -1615,6 +1688,7 @@ any_syllable = ( ( onset nucleus coda? ) / consonantal_syllable )
 
 syllable = ( onset !y nucleus coda? )
 
+# (ntsekees/aaa108f): fixes, "gimyinda" and "ni'o ni'o pa mo'o ni'o"
 consonantal_syllable = (
   consonant &syllabic coda
 )
@@ -1646,7 +1720,9 @@ o = ( comma* ~"[oO]" )
 
 u = ( comma* ~"[uU]" )
 
-y = ( comma* ~"[yY]" )
+# (ntsekees/aaa108f): 20150630 "gimyinda" and "ni'o ni'o pa mo'o ni'o"
+# (ntsekees/0030386): 20151116
+y = ( comma* ~"[yY]" !( !y nucleus ) )
 
 # ____
 
@@ -1720,19 +1796,31 @@ EOF = ( comma* !~"." )
 
 comma = ( ~"[,]" )
 
+# used by morphology
 non_lojban_word = ( !lojban_word non_space+ )
 
 non_space = ( !space_char ~"." )
 
-space_char = ( ~"[.\\t\\n\\r?! ]" )
+space_char = ( ~"[.\\t\\n\\r?!\\u0020]" )
 
 # ____
 
 spaces = ( !Y initial_spaces )
 
-initial_spaces = ( ( ( ( comma* space_char ) / ( !ybu Y ) )+ EOF?) / EOF )
+initial_spaces = (
+  (
+    (
+      ( comma* space_char )
+      / ( !ybu Y )
+    )+
+    EOF?
+  )
+  / EOF
+)
 
 ybu = ( Y space_char* BU )
+
+lujvo = ( !gismu !fuhivla brivla )
 
 # ____
 

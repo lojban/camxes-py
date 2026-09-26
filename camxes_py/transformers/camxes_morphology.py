@@ -44,7 +44,7 @@ class Visitor(NodeVisitor):
     def visit_BRIVLA(self, node, visited_children):
         return flatten(visited_children)
 
-    def visit_gismu_2(self, node, visited_children):
+    def visit_gismu(self, node, visited_children):
         return Gismu(lerpoi(visited_children))
 
     def visit_lujvo(self, node, visited_children):

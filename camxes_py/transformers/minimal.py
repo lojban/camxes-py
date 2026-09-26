@@ -30,7 +30,7 @@ class Visitor(NodeVisitor):
     def visit_zoi_word(self, node, visited_children):
         return ['zoi_word', node.text]
 
-    def visit_gismu_2(self, node, visited_children):
+    def visit_gismu(self, node, visited_children):
         return ['gismu', node.text]
 
     def visit_lujvo(self, node, visited_children):

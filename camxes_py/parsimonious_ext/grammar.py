@@ -4,7 +4,7 @@
 """
 Applies modified pull request 141 (ensure all LazyReference objects are resolved)
 _find_unresolved is removed since it led to grammar load times of >1 minute
-TODO: remove once upstream includes a proper fix
++TODO: remove once upgraded to parsimonious v10, which includes this patch
 """
 
 from functools import partial, wraps
