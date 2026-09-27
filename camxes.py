@@ -10,11 +10,11 @@ from optparse import OptionParser
 
 import camxes_py.parsimonious_ext # expression_nodes
 
-__version__ = "v0.11.0"
+__version__ = "v0.11.1"
 
 PARSERS      = [ 'camxes-ilmen' ]
 TRANSFORMERS = [ 'camxes-json', 'camxes-morphology', 'minimal', 'vlatai', 'node-coverage', 'debug', 'raw' ]
-SERIALIZERS  = [ 'json', 'json-pretty', 'json-compact', 'xml' ]
+SERIALIZERS  = [ 'ilmentufa', 'json', 'json-pretty', 'json-compact', 'xml' ]
 
 IMPLEMENTATION_RECURSION_LIMIT = {
     'CPython' : 10000
@@ -127,10 +127,15 @@ def serialize(transformed, fmt, default_serializer):
     if fmt == 'json':
         return json.dumps(transformed,
                           default=default_serializer)
-    elif fmt == 'json-compact': # a.k.a. JSON.stringify()
+    elif fmt == 'json-compact':
         return json.dumps(transformed,
                           separators=(',', ':'),
                           default=default_serializer)
+    elif fmt == 'ilmentufa':
+        from camxes_py.serializers import ilmentufa
+        config = ilmentufa.SerializerConfig(with_trimming=False, with_json_format=True)
+        serializer = ilmentufa.Serializer(config)
+        return serializer.dumps(transformed)
     elif fmt == 'json-pretty':
         return json.dumps(transformed,
                           indent=4,
@@ -170,7 +175,7 @@ def _parse_args():
                        help=("options: %s" % (", ".join(SERIALIZERS))) + \
                          " [default: %default]",
                        type="string", action="callback",
-                       dest="serializer", default="json-compact",
+                       dest="serializer", default="ilmentufa",
                        callback=check_serializer_option)
 
     options.add_option("-r", "--rule",
