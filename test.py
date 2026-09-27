@@ -12,12 +12,17 @@ from parsimonious.exceptions import ParseError
 from camxes import __version__, configure_platform
 from camxes_py.parsers import camxes_ilmen
 from camxes_py.transformers import camxes_json
+from camxes_py.serializers import ilmentufa
+
+PARSER = "camxes-py"
+TRANSFORMER = "camxes-json"
+SERIALIZER  = "ilmentufa-notrim-json" # camxes.js -m JR
 
 ENV = OrderedDict([
-    ("engine", "camxes-py"),
+    ("engine", PARSER),
     ("version", __version__),
-    ("format", "camxes-json"),
-    ("serialization", "json-compact")
+    ("format", TRANSFORMER),
+    ("serialization", SERIALIZER)
 ])
 
 TEST_DIRECTORY  = "test"
@@ -39,15 +44,19 @@ def read_json(path):
     return input_json
 
 def process_input(input_json):
+    parser = camxes_ilmen.Parser() # PARSER
+    transformer = camxes_json.Transformer() # TRANSFORMER
+    serializer_config = ilmentufa.SerializerConfig(with_trimming=False, with_json_format=True)
+    serializer = ilmentufa.Serializer(serializer_config) # SERIALIZER
+
     input_specs = input_json["specs"]
-    parser = camxes_ilmen.Parser()
-    json_transformer = camxes_json.Transformer()
     return [
-        process_spec(spec, parser, json_transformer) \
+        process_spec(spec, parser, transformer, serializer) \
             for spec in input_specs
     ]
 
-def process_spec(input_spec, parser, json_transformer):
+
+def process_spec(input_spec, parser, transformer, serializer):
     output_spec = OrderedDict()
     output_spec["md5"] = input_spec["md5"]
     text = output_spec["txt"] = input_spec["txt"]
@@ -56,7 +65,8 @@ def process_spec(input_spec, parser, json_transformer):
     try:
         print("text: " + text)
         parsed = parser.parse(text)
-        out = transform_to_serial(parsed, json_transformer)
+        transformed = transformer.transform(parsed)
+        out = serializer.dumps(transformed)
     except ParseError:
         out = "ERROR"
     if out != input_spec["out"]:
@@ -65,18 +75,10 @@ def process_spec(input_spec, parser, json_transformer):
 
     return output_spec
 
-def transform_to_serial(parsed, transformer):
-    default_serializer = default_object_serializer(transformer)
-    transformed = transformer.transform(parsed)
-    return json.dumps(transformed,
-                      separators=(',', ':'),
-                      default=default_serializer)
-
-def default_object_serializer(transformer):
-    if hasattr(transformer, 'default_serializer'):
-        return transformer.default_serializer()
-    else:
-        return lambda x: x.__dict__
+def serialize(parsed):
+    config = ilmentufa.SerializerConfig(with_trimming=False, with_json_format=True)
+    serializer = ilmentufa.Serializer(config) # SERIALIZER
+    return serialize.dumps(parsed)
 
 def print_error(text, was, now):
     print("----------------")
